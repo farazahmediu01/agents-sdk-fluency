@@ -39,7 +39,7 @@ Reference solutions are in `solutions/`. **Open them only after attempting.** Lo
 ### Setup check (do this now)
 
 ```powershell
-cd C:\Users\Faraz\Desktop\agentic-ai-from-scratch
+cd agents-sdk-fluency        # wherever you cloned it
 uv sync
 copy .env.example .env    # then paste your free Gemini key into .env
 uv run python 01_agent_loop/from_scratch/agent.py

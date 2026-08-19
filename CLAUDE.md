@@ -1,4 +1,9 @@
-# Agentic AI From Scratch
+---
+marp: true
+---
+
+
+# Agents SDK Fluency
 
 > ## 🧭 Building or extending a chapter? Read [`CHAPTER_PLAYBOOK.md`](CHAPTER_PLAYBOOK.md) first.
 >
@@ -9,8 +14,6 @@
 A hands-on curriculum that makes a student **fluent in the OpenAI Agents SDK** — by spiking each mechanism by hand just deeply enough that the framework stops feeling like magic, then building for real with the SDK.
 
 This is not a personal experiment — it is a **teaching resource**. Instructors and students use this repository to learn, teach, and practice agentic AI. Every session must produce working code AND tasks that make students build something themselves.
-
-> **The name is historical, and the scope is deliberate.** "From scratch" describes a *teaching device*, not the deliverable. We hand-roll what a student must be able to picture while debugging at 2am. Everything else is SDK from first contact.
 
 ---
 
@@ -223,7 +226,8 @@ We use **Gemini free models via the OpenAI-compatible endpoint** so cost is zero
 ### Installation
 
 ```powershell
-cd C:\Users\Faraz\Desktop\agentic-ai-from-scratch
+git clone https://github.com/farazahmediu01/agents-sdk-fluency.git
+cd agents-sdk-fluency
 uv sync
 copy .env.example .env
 # Open .env and paste your Gemini API key

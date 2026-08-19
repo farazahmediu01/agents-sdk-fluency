@@ -1,4 +1,4 @@
-# Agentic AI From Scratch
+# Agents SDK Fluency
 
 Become fluent in the **OpenAI Agents SDK** — by building each mechanism by hand just deeply enough that the framework stops feeling like magic, then shipping real agents with the SDK.
 

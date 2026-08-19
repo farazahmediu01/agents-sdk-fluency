@@ -1,7 +1,7 @@
 [project]
-name = "agentic-ai-from-scratch"
+name = "agents-sdk-fluency"
 version = "0.1.0"
-description = "Build every primitive of an agentic AI system from scratch, then read the SDK that replaces it"
+description = "A curriculum that makes you fluent in the OpenAI Agents SDK - hand-roll only what you must picture while debugging, everything else is SDK from first contact"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
