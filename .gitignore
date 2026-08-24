@@ -7,8 +7,10 @@ __pycache__/
 .idea/
 .vscode/
 .DS_Store
+.obsidian/
 command.bash
 prompt.md
+notes/
 
 # Ledger/output state written by the chapter projects and their check harnesses.
 # Generalised from the Chapter-1-only rule when Chapter 2 landed — every chapter

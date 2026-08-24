@@ -1,8 +1,3 @@
----
-marp: true
----
-
-
 # Agents SDK Fluency
 
 > ## 🧭 Building or extending a chapter? Read [`CHAPTER_PLAYBOOK.md`](CHAPTER_PLAYBOOK.md) first.
@@ -150,6 +145,35 @@ Rules:
 2. **Every task keeps its own minute estimate, and the header must equal their sum.** If the arithmetic disagrees with the header, the header is wrong.
 3. **Every section is marked `[core]` or `[depth]`.** A student on the core path can skip every `[depth]` block and still pass the next chapter's prerequisites. This is what makes an honest budget actionable instead of merely discouraging.
 4. **A chapter is 2–3 sessions, not one.** Stop advertising 90 minutes.
+5. **The curriculum total obeys the same rule as a chapter header.** It is the sum of the chapters, recomputed when a chapter lands — never a target someone hoped for.
+
+### The running total, stated honestly
+
+| Ch | Core | Full |
+|----|-----|-----|
+| 0 Python for Agents | ≈6.0 | ≈6.0 |
+| 1 The Agent Loop | ≈8.0 | ≈11.5 |
+| 2 Typed Tools | ≈11.0 | ≈18–20 |
+| 3 Structured Outputs | ≈9.0 | ≈14.5 |
+| 4 Sessions & State | ≈10.5 | ≈16.0 |
+| **Built so far (Ch0–4)** | **≈44.5 hrs** | **≈66–68 hrs** |
+
+At the current mean (≈8.9 core hrs/chapter) the full twelve-chapter curriculum lands near **115 core hours**. That is roughly five months at 20 hrs/week.
+
+**An earlier planning document asserted a 34-hour core path. It was never computed, and five chapters had already broken it when it was written.** A ceiling nobody measured is the same failure as Chapter 1's original "~4 hrs" header — the very thing this section exists to prevent. The number above is arithmetic, not ambition; if it is uncomfortable, the fix is to cut chapters, not to restate the total.
+
+### The two tracks through the roadmap
+
+A twelve-chapter monolith gives a student no defensible place to stop. So the roadmap has a declared finish line before its end:
+
+| Track | Chapters | Core | What a graduate can do |
+|---|---|---|---|
+| **Core** | **0–6** | **≈62 hrs** | Build a tool-using, typed, stateful, context-managed agent **and prove it works** with a golden dataset and a regression suite |
+| **Specialist extension** | 7–12 | ≈53 hrs | Multi-agent systems, guardrails, observability, serving, MCP, and a cold-build capstone |
+
+**Ch6 is the finish line because evals are what make the rest provable.** A student who stops at Ch6 has a complete, honest, employable skill set. A student who stops at Ch5 has an agent nobody can grade.
+
+This changes no chapter's content. It changes what "done" is allowed to mean.
 
 ---
 
@@ -164,13 +188,14 @@ Chapters are specified **only after the previous one is built and validated**. T
 | 2 | **Typed Tools** | 🔨 one spike, then SDK | 🔒📐 | ✅ Built + retrofitted |
 | 3 | **Structured Outputs** | 🔨 failing spike → 🚀 | 📐🧠 | ✅ Built |
 | 4 | **Sessions & State** | 🚀 only — no spike | 🧠 | ✅ Built |
+| 5 | **The Context Window** — Ch4's failure mode, measured in Ch4 §9 | 🔨 → 🚀 | 🧠📐 | 📋 **Spec'd, building** |
 | — | *below this line is hypothesis* | | | |
-| 5 | **The Context Window** — Ch4's failure mode, measured in Ch4 §9 | 🔨 → 🚀 | 🧠 | ⬜ |
 | 6 | **Evals** — golden datasets, LLM-as-judge, regression | 🚀 | 📐 | ⬜ |
+| 🏁 | ***core track ends here — ≈62 hrs. Everything below is the specialist extension*** | | | |
 | 7 | **Specialists** — handoffs, agents-as-tools | 🚀 | 🧠🔒 | ⬜ |
 | 8 | **Guardrails & Approvals** | 🚀 | 🔒 | ⬜ |
 | 9 | **Observability** — tracing, streaming, cost & token accounting | 🚀 | 📐 | ⬜ |
-| 10 | **Serving & MCP** — FastAPI + Model Context Protocol | 🚀 | 🔒📐 | ⬜ |
+| 10 | **Serving & MCP** — FastAPI + MCP. **Committed scope:** `session_id` as an authorisation boundary, `:memory:` amnesia under two workers, SQLite under concurrent writes | 🚀 | 🔒📐 | ⬜ |
 | 11 | **Hosted Tools & the Responses API** — the one paid chapter (~$5) | 🚀 | 🔒 | ⬜ |
 | 12 | **Cold Build Capstone** — unfamiliar domain, no scaffolding | 🚀 | all | ⬜ |
 
@@ -576,6 +601,88 @@ Case M4 tests it by changing the ledger *between turns* — a mobile app, a bank
 **Both free-tier limits appeared in one session, and they need different fixes** — `...PerMinutePerProjectPerModel` (15/min) killed a demo firing runs back to back and is solved by pacing; `...PerDayPerProjectPerModel` (500/day) killed a dataset case and is solved by a different model. Same status code, same exception class.
 
 **Tracks:** drills are a stopwatch, a trivia game, a thermostat and a session inspector (rotating, never expenses, **all SDK-native** — the first chapter where that is 100%). Spine is Spendly Lite v4, multi-turn. Track 3 requires a file-backed session with a server-derived `session_id`, a context object that *changes an answer*, and one multi-turn run in `RUNS.md`.
+
+---
+
+### Chapter 5 — `05_context_window/` 📋 SPEC (Phase A complete, not built)
+
+> Written before any code, per the playbook. A session that dies mid-build loses nothing.
+
+Budget: **core ≈7 hrs (415 min) · full ≈12 hrs (710 min)** — deliberately smaller than Ch4's 10.5/16. Ch5 has one mechanism where Ch4 had two, and its proof layer is offline, which is genuinely cheaper rather than thinner.
+
+**The hook, already written:** Ch4 §9 measured the problem instead of asserting it — transcript `1,377 → 4,782` chars over five short turns, `tok/req` `401 → 714`, and a `limit=` table where windows at `limit=2` and `limit=6` start on a `function_call_output` whose call was cut away.
+
+#### The SDK finding that shaped the spec
+
+The Agents SDK ships **`RunConfig(call_model_input_filter=...)`** — a hook receiving `ModelInputData(input=list[TResponseInputItem], instructions=str|None)` immediately before every model call, returning a possibly-modified copy. **That is the seam for all context management**, and Chapter 4 never mentioned it. It also ships **`ToolOutputTrimmer`** (`agents.extensions`) — a ready-made sliding-window filter for fat tool outputs, with `recent_turns=2`, `max_output_chars=500`, `preview_chars=200`, `trimmable_tools=None`.
+
+Consequences, and they are the whole reason Phase A read the SDK before assigning depths:
+
+- **A hand-rolled trimmer can only ever be a spike.** Shipping one as the destination would be the means eating the goal.
+- `agents/memory/openai_responses_compaction_session.py` exists but is **Responses-only** — unusable here by design (boundary: client-side state). It becomes a 📖 Observe: *here is the thing you cannot have, and why not having it is the point.*
+- **The filter fires on every model call, not once per turn.** A turn with two tool calls invokes it three times. That is a §5 practice, and a real source of "why did my summariser run four times?"
+
+#### New depth assignments (added to the standing table)
+
+| Concept | Depth | Why |
+|---|---|---|
+| `call_model_input_filter` — the seam | 🚀 SDK-native | It *is* the SDK's answer. Hand-rolling a wrapper around `Runner.run` to do the same thing teaches nothing |
+| `ToolOutputTrimmer` | 📖 Observe → 🚀 | Configure and measure it; never rebuild it |
+| Token counting / estimation | 📖 Observe | `len(json)/4` with a margin is the honest answer for a budget you enforce yourself; §2b shows `tiktoken` and why it does not change the design |
+| Compaction (summarise the head) | 🚀 SDK-native | Built on the seam. The summariser is app logic, like a tool — the SDK owns the plumbing |
+
+#### Sections — README core 215 min
+
+| § | Title | Tier | Min |
+|---|---|---|-----|
+| 1 | **The 400 you have not seen yet** — bug-first: read a `limit=2` window from Ch4's own session, send it, get rejected | `[core]` | 25 |
+| 2 | **Counting the right unit** — items vs chars vs tokens; why `limit=N` counts the wrong one | `[core]` | 30 |
+| 3 | 🔨 **The spike: trim to a budget** — `spike/trim.py`, ≤60 lines, drop from the head, guard the pairs. Tested offline against a captured transcript | `[core]` | 40 |
+| 4 | **What the spike lost** — turn 1 stated the goal; the tail window threw away precisely that end | `[core]` | 20 |
+| 5 | 🚀 **The seam** — `call_model_input_filter`, its contract, and the surprise that it fires per model call | `[core]` | 35 |
+| 6 | **Compaction: summarise the head** — the real technique; when to fire, and what must never be summarised | `[core]` | 45 |
+| 7 | **What a summary costs you** — the honest limitation, §7b/§8 tradition | `[core]` | 20 |
+| 2b | `tiktoken` vs estimation, and why the design does not change | `[depth]` | 20 |
+| 5b | `ToolOutputTrimmer` — the built-in that solves the *other* growth problem | `[depth]` | 25 |
+| 6b | Summarising with a cheaper model; the cost arithmetic of compaction | `[depth]` | 30 |
+| 6c | Composing filters, and ordering hazards | `[depth]` | 30 |
+
+#### §7 is this chapter's §8 — the fifth member of the family
+
+| | The rule | What it still cannot stop |
+|---|---|---|
+| Ch2 §7b | a type stops a bad value being **accepted** | the model **fabricating** a good one |
+| Ch3 §8 | a schema stops a bad answer being **hidden** | a **well-formed false** one |
+| Ch4 §8 | a session stops context being **lost** | the model **reciting** a fact that has since changed |
+| **Ch5 §7** | compaction stops the context **overflowing** | the agent **forgetting** — and not knowing that it forgot |
+
+A summary is well-formed and lossy. The agent does not say *"I no longer have that"*; it behaves as though it was never told. **An over-trimmed agent and a broken session are indistinguishable from the outside** — which is why the dataset needs a control, exactly as M2 did.
+
+#### Proof — offline-first, and this is a design decision not a shortcut
+
+Ch5 needs long conversations, and a 15-turn case is 15+ requests. Five live cases would be 150–250 requests — half a day of flash-lite quota for one run, on a chapter whose subject *is* long conversations.
+
+**The trimmer is a pure function over a list of items.** So the bulk of the proof is free:
+
+- `test_trim.py` — exhaustive, offline, milliseconds. Properties: never orphans a pair; never exceeds the budget; **and a window that is already healthy comes back byte-identical.** That last one is the assertion the audit's proposed `clean_orphaned_turns` never had — a trimmer that quietly rewrites healthy history is a worse bug than the one it fixes
+- `check_compaction.py` — a **small** live dataset: one long case that must complete, one that must still answer a turn-1 question after compaction, one control
+- `check_regression.py` — **Ch3's 9 cases and Ch4's 5 multi-turn cases**, both suites, against v5
+
+This mirrors Ch3's replay spike: the constraint forced the cheaper design, and the cheaper design is better.
+
+#### Tracks
+
+| Track | Ch5 increment |
+|---|---|
+| 1️⃣ Drills | Rotating, never expenses: a note-taking bot that must survive 40 turns; a `ToolOutputTrimmer` config drill on a fake search tool; **the blank-file challenge is mandatory and lives here** |
+| 2️⃣ Spine | **Spendly Lite v5** — v4 + `call_model_input_filter` + head-summary compaction + the orphan guard |
+| 3️⃣ Own agent | Verbatim block. Must show a conversation long enough to trigger compaction, plus what the agent lost |
+
+#### Decisions taken at spec time
+
+1. **The spine ships summarise-the-head, not a bare tail window.** A tail window alone ends the chapter on a problem; compaction is what production does, and it is what makes §7's lesson land — the loss becomes *well-formed*, which is the family's whole shape.
+2. **`ToolOutputTrimmer` is `[depth]`, not core.** It solves fat tool *outputs*, which is a different growth curve from transcript length. Real, useful, and not this chapter's argument.
+3. **The guided build is `[depth]`.** Same precedent as Ch2's retrofit: core keeps two warm-ups and the mandatory blank-file challenge. Nothing is deleted, only re-tiered.
 
 ---
 
