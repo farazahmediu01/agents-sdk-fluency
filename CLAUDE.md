@@ -704,10 +704,15 @@ This mirrors Ch3's replay spike: the constraint forced the cheaper design, and t
 | Check which provider/model is wired (free, no tokens) | `uv run python -m shared.models` |
 | Grade Ch2 (both builds) | `uv run python 02_typed_tools/solutions/check_expenses.py [--impl sdk]` |
 | Grade Ch3 (9 cases, ~12 min — free tier is the bottleneck) | `uv run python 03_structured_outputs/solutions/check_expenses.py` |
-| Run the spine (current version) | `uv run python 04_sessions_state/solutions/expense_agent_v4.py` |
+| Run the Ch4 spine (multi-turn) | `uv run python 04_sessions_state/solutions/expense_agent_v4.py` |
 | Ch4 — what a session holds / costs / hides | `uv run python 04_sessions_state/with_sdk/{session,growth,context}_demo.py` |
 | Grade Ch4 multi-turn (5 cases, ~11 min) | `uv run python 04_sessions_state/solutions/check_multiturn.py [--only 1,4]` |
 | **Ch4 regression — Ch3's 9 cases against v4** | `uv run python 04_sessions_state/solutions/check_regression.py` |
+| Ch5 spike — the orphan 400, proved (2 requests) | `uv run python 05_context_window/spike/orphan_400.py` |
+| Ch5 spike — trim to a budget (free, offline) | `uv run python 05_context_window/spike/trim.py` |
+| Ch5 — the seam, and how often it fires | `uv run python 05_context_window/with_sdk/filter_demo.py` |
+| Ch5 — compaction vs a tail window (add `--trim` for the control) | `uv run python 05_context_window/with_sdk/compaction_demo.py` |
+| Run the spine (current version) | `uv run python 05_context_window/solutions/expense_agent_v5.py` |
 | Add a dependency | `uv add <package>` |
 
 ---

@@ -191,6 +191,9 @@ Always diagnose the *shape* before touching the agent:
 - **A keyword call cannot be checked against a positional `Callable`.** A registry dispatched with `**kwargs` needs `Callable[..., X]`.
 - **Pydantic lax mode coerces `True` to `1`.** Fine for a model's sloppy JSON, catastrophic for a money field.
 - **Never assert on turn count in an eval.** The SDK batches parallel tool calls differently from a hand-rolled loop.
+- **A bootstrap module needs a name unique across the whole repo.** `sys.modules` keys on the module NAME, not the path. Three files called `_bootstrap.py` are one module: the first imported wins and every later `import _bootstrap` is a cache hit that silently does nothing. `uv run pytest 05_context_window` passed while `uv run pytest` died with `ModuleNotFoundError: No module named 'packing_agent'`. Chapters 3 and 4 got away with it because their path lists overlap; Chapter 5 needed a path neither adds. Name them `_bootstrap_<something>5.py`. **Better still: keep the code worth testing free of cross-chapter imports, and you need no bootstrap at all** — that is why Ch5's trimmer lives in `context_filter.py` and not in the demo that uses it.
+- **`ModelInputData.input` is a `list[TResponseInputItem]`, and `list` is invariant.** A helper typed on `list[dict[str, Any]]` will not accept it and its return will not go back. One named `cast` at the seam is the honest fix; retyping the helper against the SDK spreads the SDK through code that does not need it.
+- **Session items carry `provider_data` you did not put there.** On Gemini 3.x that includes a `thought_signature` the model requires back when a tool call is replayed, and the SDK round-trips it for you. Any code that *rebuilds* items instead of *filtering* them drops it and earns a 400 that names neither the field nor the operation. Assert identity (`a is b`), not equality, when a transform is supposed to be a no-op.
 
 ---
 

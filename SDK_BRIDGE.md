@@ -257,13 +257,61 @@ quieter.**
 
 ---
 
-## Chapters 5+ — to come
+## Chapter 5 — The Context Window
+
+| Chapter 4 left you with | Chapter 5's SDK abstraction | What it does for you |
+|---|---|---|
+| `SessionSettings(limit=N)` — the only knob | `RunConfig(call_model_input_filter=...)` | The exact item list about to go to the model, yours to modify |
+| counting **items** | you count tokens, in your own filter | The SDK deliberately does not choose your unit |
+| a window that can orphan a tool pair | your `drop_orphans` | Nothing built in — the SDK hands you the list, not a policy |
+| *(nothing)* | `ModelInputData.instructions` | The **second** field. Where a summary belongs |
+| *(nothing)* | `ToolOutputTrimmer` from `agents.extensions` | A ready-made filter for fat tool outputs |
+| *(nothing)* | `provider_data` on stored items | Provider replay state the SDK round-trips for you |
+| a transcript that only grows | a filter that is `async` | So a compactor may itself call a model |
+
+### 🧠 The distinction the whole chapter rests on
+
+```
+  turn 1  stored=  6  in->sent  1->1 3->3 5->5
+  turn 4  stored= 18  in->sent  15->5 17->7
+```
+
+`stored` never falls. What is **sent** goes up and down. The session is storage; the filter
+is transport. **Trimming is not deletion**, and conflating the two is how people end up
+deleting a user's history to save tokens.
+
+### 📐 The filter fires per model call, not per turn
+
+```
+  the filter fired 3 times, seeing [1, 3, 5] items
+```
+
+One user message that needed two tools. Three round trips, three invocations. Anything
+expensive in that function is billed three times — which is how this chapter's first
+compactor spent thirteen model calls on a nine-turn conversation.
+
+### 🔒 What does NOT transfer
+
+**`agents.memory.openai_responses_compaction_session` exists, and you cannot use it.** The
+SDK ships automatic compaction — for the **Responses API**, where the server owns the
+transcript. This curriculum runs on Chat Completions precisely so that the transcript lives
+in your process where you can prune it (`RESPONSES_VS_CHATCOMPLETIONS.md`).
+
+That is the trade stated plainly: on Responses you get compaction for free and cannot teach
+it; on Chat Completions you write it and understand it. Chapter 11 flips the switch and shows
+you what you were doing by hand.
+
+**And `call_model_input_filter` takes exactly one callable.** There is no filter pipeline.
+Composing two behaviours is your job, ordering hazards included — README §6c.
+
+---
+
+## Chapters 6+ — to come
 
 Rows are added as each chapter lands. Planned coverage, in the order the curriculum will build it — this table mirrors the roadmap in `CLAUDE.md`, and **anything past the next chapter is a hypothesis, not a promise**:
 
 | Ch | Concept | Likely SDK abstraction |
 |---|---|---|
-| 5 | Context window management — Chapter 4's failure mode, measured in Ch4 §9 | compaction / summarisation |
 | 6 | Evals | our harness (the SDK does not provide this) |
 | 7 | Specialists & routing | `handoffs=[...]`, agents-as-tools |
 | 8 | Guardrails & human approval | `@input_guardrail`, `@output_guardrail`, `needs_approval=True` |

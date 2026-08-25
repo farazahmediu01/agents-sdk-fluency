@@ -43,15 +43,28 @@ No AI/ML background required.
 | 2 | **Typed Tools** — validation before the function body runs | 🔒📐 | ✅ Built |
 | 3 | **Structured Outputs** — typed answers, and evals that stop guessing | 📐🧠 | ✅ Built |
 | 4 | **Sessions & State** — persistence, context objects as DI | 🧠 | ✅ Built |
+| 5 | **The Context Window** — token budgets, orphan-safe trimming, compaction | 🧠📐 | 📋 Building |
 | — | *everything below is a hypothesis, not a promise* | | |
-| 5 | **The Context Window** — Chapter 4's failure mode, measured in Ch4 §9 | 🧠 | ⬜ Next |
-| 6 | **Evals** — golden datasets, LLM-as-judge, regression | 📐 | ⬜ |
+| 6 | **Evals** — golden datasets, LLM-as-judge, regression | 📐 | ⬜ Next |
 | 7 | **Specialists** — handoffs, agents-as-tools | 🧠🔒 | ⬜ |
 | 8 | **Guardrails & Approvals** | 🔒 | ⬜ |
 | 9 | **Observability** — tracing, streaming, cost & token accounting | 📐 | ⬜ |
 | 10 | **Serving & MCP** — FastAPI + Model Context Protocol | 🔒📐 | ⬜ |
 | 11 | **Hosted Tools & the Responses API** — the one paid chapter (~$5) | 🔒 | ⬜ |
 | 12 | **Cold Build Capstone** — unfamiliar domain, no scaffolding | all | ⬜ |
+
+### Where the finish line is
+
+Twelve chapters is a long road and a student deserves a defensible place to stop, so the roadmap declares one:
+
+| Track | Chapters | Core hours | A graduate can |
+|---|---|---|---|
+| **Core** | 0–6 | **≈62** | Build a tool-using, typed, stateful, context-managed agent — **and prove it works** with a golden dataset and a regression suite |
+| Specialist extension | 7–12 | ≈53 | Multi-agent systems, guardrails, observability, serving, MCP, and a cold-build capstone |
+
+**Ch6 is the finish line because evals are what make everything before it provable.** Stop at Chapter 6 and you have a complete, honest, employable skill set. Stop at Chapter 5 and you have an agent nobody can grade.
+
+Those hours are the sum of the chapters' own published per-section estimates, recomputed every time a chapter lands — never a target somebody hoped for. See `CLAUDE.md`'s TIME BUDGETS section for the arithmetic.
 
 Chapters past the next one are **deliberately not designed yet.** Each is specified only once the previous is built and validated, so the sequence stays coherent instead of aspirational.
 
