@@ -26,7 +26,7 @@ from agents import RunConfig, Runner, SQLiteSession
 from agents.items import TResponseInputItem
 from agents.run_config import CallModelData, ModelInputData
 
-import _bootstrap  # noqa: F401  -- must precede the packing_agent import
+import _bootstrap_sdk5  # noqa: F401  -- must precede the packing_agent import
 from context_filter import tokens, trim_to_budget
 from packing_agent import Traveller, packing_agent
 

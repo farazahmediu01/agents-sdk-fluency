@@ -239,6 +239,7 @@ extraPaths = [
 root = "05_context_window/solutions"
 extraPaths = [
     "05_context_window/solutions",
+    "05_context_window/with_sdk",
     "04_sessions_state/solutions",
     "03_structured_outputs/solutions",
     "02_typed_tools/solutions",
