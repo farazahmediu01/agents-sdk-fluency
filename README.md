@@ -43,7 +43,7 @@ No AI/ML background required.
 | 2 | **Typed Tools** — validation before the function body runs | 🔒📐 | ✅ Built |
 | 3 | **Structured Outputs** — typed answers, and evals that stop guessing | 📐🧠 | ✅ Built |
 | 4 | **Sessions & State** — persistence, context objects as DI | 🧠 | ✅ Built |
-| 5 | **The Context Window** — token budgets, orphan-safe trimming, compaction | 🧠📐 | 📋 Building |
+| 5 | **The Context Window** — token budgets, orphan-safe trimming, compaction | 🧠📐 | ✅ Built |
 | — | *everything below is a hypothesis, not a promise* | | |
 | 6 | **Evals** — golden datasets, LLM-as-judge, regression | 📐 | ⬜ Next |
 | 7 | **Specialists** — handoffs, agents-as-tools | 🧠🔒 | ⬜ |

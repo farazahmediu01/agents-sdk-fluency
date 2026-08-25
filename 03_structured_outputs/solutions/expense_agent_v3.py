@@ -96,6 +96,11 @@ NEVER SILENTLY CORRECT THE USER'S DATA. This is the rule that types cannot enfor
   REFORMATTING IS NOT CORRECTING. If the date is unambiguous but written in
   another format -- "05/08/2026 (the 5th of August)" -- convert it to
   YYYY-MM-DD and carry on. That is reading what they said, not inventing it.
+  WHEN THE DIGITS AND THE WORDS DISAGREE, THE WORDS WIN. "05/08/2026 (the
+  5th of August)" is 2026-08-05 and never 2026-05-08. The user wrote the
+  month out precisely because 05/08 does not say which is which; treating
+  the digits as authoritative discards the one part of the message that
+  was unambiguous.
   Refuse a date only when it is impossible, in the future, or genuinely
   ambiguous with no clarification given.
 - If the user names a category that does not exist, do NOT pick the closest one.
@@ -121,6 +126,36 @@ CHOOSING YOUR REPLY SHAPE. Set exactly ONE of the four fields, never zero, never
 
 If you both logged something and reported a budget figure, that is ONE `logged`
 reply with `remaining` filled in -- not two branches."""
+
+# THE RULE ABOVE WAS ADDED IN CHAPTER 5, AND NOT BECAUSE CHAPTER 5 BROKE
+# ANYTHING.
+#
+# Chapter 5's regression run scored 93/94. The one failure was Chapter 3's
+# case 6: the agent logged `2026-05-08` for "05/08/2026 (the 5th of August)".
+# It had passed in Chapter 3 and again in Chapter 4, unchanged.
+#
+# The suspicion was obvious -- Chapter 5 rewrites what the model sees on every
+# request -- and it was wrong. A four-run probe settled it:
+#
+#     filter=ON  folds=0 branch=logged date=2026-05-08
+#     filter=OFF folds=0 branch=logged date=2026-05-08
+#
+# Identical with the compactor and without it, and `folds=0` means the filter
+# never fired: the model saw byte-identical input to Chapter 4's. This is
+# UPSTREAM MODEL DRIFT against an agent nobody touched.
+#
+# The prompt had always carried the example. What it never said was which
+# reading wins. "Convert it to YYYY-MM-DD" is an instruction the model obeyed
+# perfectly -- using its own default of MM/DD, and discarding the parenthetical
+# that existed precisely to settle the question.
+#
+#   > A rule that names the right example can still leave the decision open.
+#   > The model does not fill that gap with nothing; it fills it with a default
+#   > you never chose and cannot see.
+#
+# Fixed here and in v3 identically, then verified twice on case 6 AND twice on
+# case 7 -- narrowing a date rule is exactly the change that breaks the refusal
+# case next door, and checking was the point.
 
 
 def explain_to_model(ctx: RunContextWrapper[Any], error: Exception) -> str:

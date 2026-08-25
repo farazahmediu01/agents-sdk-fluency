@@ -188,7 +188,7 @@ Chapters are specified **only after the previous one is built and validated**. T
 | 2 | **Typed Tools** | 🔨 one spike, then SDK | 🔒📐 | ✅ Built + retrofitted |
 | 3 | **Structured Outputs** | 🔨 failing spike → 🚀 | 📐🧠 | ✅ Built |
 | 4 | **Sessions & State** | 🚀 only — no spike | 🧠 | ✅ Built |
-| 5 | **The Context Window** — Ch4's failure mode, measured in Ch4 §9 | 🔨 → 🚀 | 🧠📐 | 📋 **Spec'd, building** |
+| 5 | **The Context Window** — token budgets, orphan-safe trimming, compaction | 🔨 → 🚀 | 🧠📐 | ✅ Built |
 | — | *below this line is hypothesis* | | | |
 | 6 | **Evals** — golden datasets, LLM-as-judge, regression | 🚀 | 📐 | ⬜ |
 | 🏁 | ***core track ends here — ≈62 hrs. Everything below is the specialist extension*** | | | |
@@ -604,85 +604,54 @@ Case M4 tests it by changing the ledger *between turns* — a mobile app, a bank
 
 ---
 
-### Chapter 5 — `05_context_window/` 📋 SPEC (Phase A complete, not built)
+### Chapter 5 — `05_context_window/` ✅ built
 
-> Written before any code, per the playbook. A session that dies mid-build loses nothing.
+The first chapter deliberately **smaller** than the one before it: core ≈7 hrs (415 min) / full ≈12, against Ch4's 10.5/16. The saving is real rather than a thinning — this chapter's proof layer runs offline, so the hours Ch4 spent waiting on dataset runs are simply not spent.
 
-Budget: **core ≈7 hrs (415 min) · full ≈12 hrs (710 min)** — deliberately smaller than Ch4's 10.5/16. Ch5 has one mechanism where Ch4 had two, and its proof layer is offline, which is genuinely cheaper rather than thinner.
+- `spike/trim.py` + `spike/transcript.json` — the hand-rolled trimmer, ≤60 lines, disposable, replaying **22 real items captured from Ch4's `growth_demo` session** (the same 4,782 characters that chapter's table published)
+- `spike/orphan_400.py` — Ch4 said a provider *"can"* reject an orphaned window. This sends one. It does.
+- `with_sdk/context_filter.py` — the pure trimmer: `tokens`, `drop_orphans`, `align_to_turn_start`, `last_turn_start`, `trim_to_budget`. **Imports nothing from the SDK or any other chapter**, which is what makes it free to test
+- `with_sdk/filter_demo.py` — PART 1 free; PART 2 counts filter firings; PART 3 a real trimmed conversation
+- `with_sdk/compaction.py` — `Compactor`: fold, cache, hysteresis. The summary goes in `instructions`
+- `with_sdk/compaction_demo.py` — the experiment, with `--trim` as the control
+- `with_sdk/test_trim.py` + `test_compaction.py` — **24 offline tests, no API key, ~1s**
+- `solutions/expense_agent_v5.py` — v4 + one argument. Tools, storage, prompt and reply types imported unchanged
+- `solutions/check_compaction.py` — 4 live cases; `solutions/check_regression.py` — **Ch3's 9 and Ch4's 5 against v5, with the compactor attached**
+- Gate clean; Ch5's dataset 4/4; regression 93/94 twice with two *different* pre-existing failures, both diagnosed by probe
 
-**The hook, already written:** Ch4 §9 measured the problem instead of asserting it — transcript `1,377 → 4,782` chars over five short turns, `tok/req` `401 → 714`, and a `limit=` table where windows at `limit=2` and `limit=6` start on a `function_call_output` whose call was cut away.
+**The SDK finding that shaped the chapter.** `RunConfig(call_model_input_filter=...)` receives the exact item list about to go to the model and returns a modified one; it may be `async`, so it may itself call a model. **That is the seam for all context management, and Chapter 4 never mentioned it.** The SDK also ships `ToolOutputTrimmer`. So a hand-rolled trimmer can only ever be a spike — shipping one as the destination would be the means eating the goal. `agents.memory.openai_responses_compaction_session` exists and is **Responses-only**, which becomes a 📖 Observe: *here is the thing you cannot have, and why not having it is the point.*
 
-#### The SDK finding that shaped the spec
+**§7 is this chapter's §8, and the control rewrote it.** The spec predicted compaction's danger was *"the agent forgets and does not know it forgot"*. Running the control showed that is the wrong half:
 
-The Agents SDK ships **`RunConfig(call_model_input_filter=...)`** — a hook receiving `ModelInputData(input=list[TResponseInputItem], instructions=str|None)` immediately before every model call, returning a possibly-modified copy. **That is the seam for all context management**, and Chapter 4 never mentioned it. It also ships **`ToolOutputTrimmer`** (`agents.extensions`) — a ready-made sliding-window filter for fat tool outputs, with `recent_turns=2`, `max_output_chars=500`, `preview_chars=200`, `trimmable_tools=None`.
+```
+TAIL WINDOW   "You did not mention a reason for reconciling this month."
+COMPACTION    "You are reconciling this month for your upcoming visa application."
+```
 
-Consequences, and they are the whole reason Phase A read the SDK before assigning depths:
-
-- **A hand-rolled trimmer can only ever be a spike.** Shipping one as the destination would be the means eating the goal.
-- `agents/memory/openai_responses_compaction_session.py` exists but is **Responses-only** — unusable here by design (boundary: client-side state). It becomes a 📖 Observe: *here is the thing you cannot have, and why not having it is the point.*
-- **The filter fires on every model call, not once per turn.** A turn with two tool calls invokes it three times. That is a §5 practice, and a real source of "why did my summariser run four times?"
-
-#### New depth assignments (added to the standing table)
-
-| Concept | Depth | Why |
-|---|---|---|
-| `call_model_input_filter` — the seam | 🚀 SDK-native | It *is* the SDK's answer. Hand-rolling a wrapper around `Runner.run` to do the same thing teaches nothing |
-| `ToolOutputTrimmer` | 📖 Observe → 🚀 | Configure and measure it; never rebuild it |
-| Token counting / estimation | 📖 Observe | `len(json)/4` with a margin is the honest answer for a budget you enforce yourself; §2b shows `tiktoken` and why it does not change the design |
-| Compaction (summarise the head) | 🚀 SDK-native | Built on the seam. The summariser is app logic, like a tool — the SDK owns the plumbing |
-
-#### Sections — README core 215 min
-
-| § | Title | Tier | Min |
-|---|---|---|-----|
-| 1 | **The 400 you have not seen yet** — bug-first: read a `limit=2` window from Ch4's own session, send it, get rejected | `[core]` | 25 |
-| 2 | **Counting the right unit** — items vs chars vs tokens; why `limit=N` counts the wrong one | `[core]` | 30 |
-| 3 | 🔨 **The spike: trim to a budget** — `spike/trim.py`, ≤60 lines, drop from the head, guard the pairs. Tested offline against a captured transcript | `[core]` | 40 |
-| 4 | **What the spike lost** — turn 1 stated the goal; the tail window threw away precisely that end | `[core]` | 20 |
-| 5 | 🚀 **The seam** — `call_model_input_filter`, its contract, and the surprise that it fires per model call | `[core]` | 35 |
-| 6 | **Compaction: summarise the head** — the real technique; when to fire, and what must never be summarised | `[core]` | 45 |
-| 7 | **What a summary costs you** — the honest limitation, §7b/§8 tradition | `[core]` | 20 |
-| 2b | `tiktoken` vs estimation, and why the design does not change | `[depth]` | 20 |
-| 5b | `ToolOutputTrimmer` — the built-in that solves the *other* growth problem | `[depth]` | 25 |
-| 6b | Summarising with a cheaper model; the cost arithmetic of compaction | `[depth]` | 30 |
-| 6c | Composing filters, and ordering hazards | `[depth]` | 30 |
-
-#### §7 is this chapter's §8 — the fifth member of the family
+The tail window failed **loudly** — it noticed the hole and said so. **Deletion leaves a gap the agent can feel; summarisation fills it with something plausible.** That is why compaction is the better strategy *and* the more dangerous one, and it is the fifth member of a family now four chapters deep:
 
 | | The rule | What it still cannot stop |
 |---|---|---|
 | Ch2 §7b | a type stops a bad value being **accepted** | the model **fabricating** a good one |
 | Ch3 §8 | a schema stops a bad answer being **hidden** | a **well-formed false** one |
-| Ch4 §8 | a session stops context being **lost** | the model **reciting** a fact that has since changed |
-| **Ch5 §7** | compaction stops the context **overflowing** | the agent **forgetting** — and not knowing that it forgot |
+| Ch4 §8 | a session stops context being **lost** | the model **reciting** a fact that has changed |
+| **Ch5 §7** | compaction stops the context **overflowing** | the summary being **confidently incomplete** |
 
-A summary is well-formed and lossy. The agent does not say *"I no longer have that"*; it behaves as though it was never told. **An over-trimmed agent and a broken session are indistinguishable from the outside** — which is why the dataset needs a control, exactly as M2 did.
+**Six real defects, every one found by running the code.** The first three are the chapter:
 
-#### Proof — offline-first, and this is a design decision not a shortcut
+1. **Pairing is necessary and not sufficient.** `drop_orphans` produced a window with every call/result pair intact that the provider still refused: *"function call turn must come immediately after a user turn or after a function response turn."* It opened on an assistant message. **A conversation is a sequence with legal start positions, not a bag of items that reference each other.** The spike's table now carries a `legal?` column where five of six orphan-free rows print `NO`.
+2. **A trimmer that rebuilds items destroys provider state.** Stored `function_call` items carry `provider_data.thought_signature`, which Gemini 3.x requires back on replay and the SDK round-trips for you. Hand-converting dropped it and earned a 400 naming neither the field nor the operation. This is why `test_trim.py` asserts **identity, not equality** for a healthy window.
+3. **A cache whose invalidation condition is also its reset condition is not a cache.** `compaction.py`'s own docstring warned that an uncached summariser would run three times per turn. It *had* a cache and still spent **13 model calls on 9 turns** — the trigger and the target were the same number. Hysteresis (fold at the full budget, cut back to half) took it to **4 folds, identical answers**.
+4. **An empty window is not a small request, it is an invalid one.** The dataset's first run died on `"contents is not specified"` — a fold had advanced past the last user message, so `align_to_turn_start` found none and returned `[]`. Fixed twice over: `_split_at` snaps **backwards to a user-message index** (a boundary you must repair afterwards is one you should have chosen), and `trim_to_budget` gained a floor — **when the budget and validity conflict, validity wins.**
+5. **Two checks wrong about their subject, not their threshold.** `test_the_window_fits_the_budget` failed at `201 <= 200` once the floor existed; dropping 200 from the list would have produced a green check that no longer tested the interesting case. And **C4 passed, then failed an hour later unchanged** — the conversation sat within a few tokens of the fixture budget, so it was measuring the model's verbosity. Fixed by making the premise true by construction and asserting it. **A flaky check is usually a check whose premise you forgot to assert.**
+6. **Model drift, not a regression.** The regression's first run failed Ch3 case 6 — `2026-05-08` for *"05/08/2026 (the 5th of August)"* — on an agent nobody had touched. A four-call probe showed the failure identical with the filter on and off, `folds=0` both ways. The prompt had always carried the example and said *"convert it to YYYY-MM-DD"*; it never said which reading wins. **A rule that names the right example can still leave the decision open, and the model fills that gap with a default you never chose and cannot see.** Fixed in v3 and v4 identically, verified twice on case 6 *and* twice on case 7 — narrowing a date rule is exactly the change that breaks the refusal case next door.
 
-Ch5 needs long conversations, and a 15-turn case is 15+ requests. Five live cases would be 150–250 requests — half a day of flash-lite quota for one run, on a chapter whose subject *is* long conversations.
+**One failure left in deliberately.** `ch4/M5` failed run 2 (`8500` not `1500`) — the agent did arithmetic on a number it already had instead of calling `month_total`, in 2 turns where healthy runs take 3. Eight probe runs, four with the compactor and four without, came back **8/8 with `folds=0`**: a two-turn conversation never reaches the 3000 budget, so Ch5 cannot be the cause. It is Ch4 §8's own failure mode at roughly 1-in-10. **Recorded rather than patched** — Ch4's M2 defect was *caused* by a prompt rule added to make another case pass, and adding instruction pressure to a case that already succeeds 90% of the time is how that happens again.
 
-**The trimmer is a pure function over a list of items.** So the bulk of the proof is free:
+**Two operational findings.** Never run two golden-dataset harnesses concurrently: every one calls `expense_store.reset(seeded=True)` against the *same* ledger, so they wipe each other mid-case and the failures read exactly like agent defects. And a dataset run outlives a 10-minute tool timeout — redirect to a log and background it.
 
-- `test_trim.py` — exhaustive, offline, milliseconds. Properties: never orphans a pair; never exceeds the budget; **and a window that is already healthy comes back byte-identical.** That last one is the assertion the audit's proposed `clean_orphaned_turns` never had — a trimmer that quietly rewrites healthy history is a worse bug than the one it fixes
-- `check_compaction.py` — a **small** live dataset: one long case that must complete, one that must still answer a turn-1 question after compaction, one control
-- `check_regression.py` — **Ch3's 9 cases and Ch4's 5 multi-turn cases**, both suites, against v5
+**Tracks:** drills are a dungeon master, a tool that will not shut up, and the mandatory blank-file interview coach (twelve turns, **control run required**) — rotating, never expenses, five of six SDK-native. Spine is Spendly Lite v5. Track 3 requires a filter, a conversation long enough to trigger it, a control run, and one structural property asserted offline.
 
-This mirrors Ch3's replay spike: the constraint forced the cheaper design, and the cheaper design is better.
-
-#### Tracks
-
-| Track | Ch5 increment |
-|---|---|
-| 1️⃣ Drills | Rotating, never expenses: a note-taking bot that must survive 40 turns; a `ToolOutputTrimmer` config drill on a fake search tool; **the blank-file challenge is mandatory and lives here** |
-| 2️⃣ Spine | **Spendly Lite v5** — v4 + `call_model_input_filter` + head-summary compaction + the orphan guard |
-| 3️⃣ Own agent | Verbatim block. Must show a conversation long enough to trigger compaction, plus what the agent lost |
-
-#### Decisions taken at spec time
-
-1. **The spine ships summarise-the-head, not a bare tail window.** A tail window alone ends the chapter on a problem; compaction is what production does, and it is what makes §7's lesson land — the loss becomes *well-formed*, which is the family's whole shape.
-2. **`ToolOutputTrimmer` is `[depth]`, not core.** It solves fat tool *outputs*, which is a different growth curve from transcript length. Real, useful, and not this chapter's argument.
-3. **The guided build is `[depth]`.** Same precedent as Ch2's retrofit: core keeps two warm-ups and the mandatory blank-file challenge. Nothing is deleted, only re-tiered.
 
 ---
 

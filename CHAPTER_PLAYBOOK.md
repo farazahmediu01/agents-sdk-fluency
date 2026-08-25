@@ -172,6 +172,10 @@ Always diagnose the *shape* before touching the agent:
 
 **If a dataset is flaky, fix the harness before the agent.** An eval that fails for infrastructure reasons teaches nothing and costs you trust in the suite.
 
+**Never run two golden-dataset harnesses at once.** They look independent — different files, different cases — and they are not: every one of them calls `expense_store.reset(seeded=True)` against the *same* ledger on disk. Run them concurrently and each will wipe the other's state mid-case, producing failures that read exactly like agent defects and cannot be reproduced afterwards. They also share the per-minute quota. Run them one after another, or give each its own store first.
+
+**A 10-minute tool timeout is shorter than a dataset run.** Start long harnesses in the background and redirect to a log, rather than losing the run — and the quota — to a timeout at minute nine.
+
 ### When a case genuinely fails
 
 1. **Check the assertion first.** Is the expected behaviour actually right? Do not weaken a check to make a run pass.

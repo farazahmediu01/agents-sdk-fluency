@@ -91,11 +91,40 @@ class Compactor:
         self.summarisations: int = 0  # model calls spent on summarising
 
     def _split_at(self, items: list[Item]) -> int:
-        """Index of the first item to keep verbatim after a fold."""
+        """
+        Index of the first item to keep verbatim after a fold.
+
+        THE RESULT IS ALWAYS A USER-MESSAGE INDEX, and that is not cosmetic.
+
+        The first version returned wherever the token count happened to run out.
+        A golden-dataset run then died on turn 2 of case C1:
+
+            400 INVALID_ARGUMENT
+            "* GenerateContentRequest.contents: contents is not specified"
+
+        The split had landed past the last user message, so the verbatim tail
+        contained only assistant and tool items, `align_to_turn_start` found no
+        user message to open on, and the filter handed the SDK an empty list.
+
+        Snapping the split BACK to a turn boundary fixes three things at once:
+        the tail can never be empty, it always opens legally, and a summary
+        never describes half an exchange -- which was Challenge 2 in this
+        chapter's `PROJECT.md` before it turned out to be load-bearing.
+
+        > A boundary you have to repair afterwards is a boundary you should have
+        > chosen in the first place.
+        """
         tail_budget = int(self.budget * self.keep)
+        raw = 0
         for kept, index in enumerate(range(len(items) - 1, -1, -1)):
             if kept and tokens(items[index:]) > tail_budget:
-                return index + 1
+                raw = index + 1
+                break
+
+        # Snap backwards to the nearest user message: never cut inside a turn.
+        for index in range(min(raw, len(items) - 1), -1, -1):
+            if items[index].get("role") == "user":
+                return index
         return 0
 
     async def _fold(self, new_items: list[Item]) -> None:

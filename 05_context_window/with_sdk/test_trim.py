@@ -25,7 +25,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from context_filter import align_to_turn_start, drop_orphans, tokens, trim_to_budget
+from context_filter import (
+    align_to_turn_start,
+    drop_orphans,
+    last_turn_start,
+    tokens,
+    trim_to_budget,
+)
 
 TRANSCRIPT = Path(__file__).resolve().parents[1] / "spike" / "transcript.json"
 
@@ -90,13 +96,66 @@ def test_no_budget_ever_produces_an_orphan() -> None:
 # --------------------------------------------------------- 2. respect the budget
 
 
-def test_the_window_fits_the_budget() -> None:
+def test_the_window_fits_the_budget_or_is_exactly_the_floor() -> None:
+    """
+    THIS CHECK WAS WRONG ABOUT ITS SUBJECT, not its threshold.
+
+    It read `tokens(window) <= budget` and failed at 201 <= 200 the moment the
+    empty-window floor was added -- because the most recent turn is 201 tokens
+    and the floor sends it anyway.
+
+    The tempting fix is to drop 200 from the list. That produces a green check
+    that no longer tests the interesting case. The claim being made is not "the
+    window always fits"; it is:
+
+        the window fits the budget, UNLESS fitting would have meant sending
+        nothing, in which case it is exactly the current turn
+
+    So assert that. A check that has to avoid an input in order to pass is
+    telling you which input matters.
+    """
     items = load()
-    for budget in (1400, 1000, 600, 400, 200):
-        assert tokens(trim_to_budget(items, budget)) <= budget
+    floor = items[last_turn_start(items) :]
+    for budget in (1400, 1000, 600, 400, 200, 50):
+        window = trim_to_budget(items, budget)
+        assert tokens(window) <= budget or window == floor, f"budget={budget}"
 
 
-def test_a_budget_smaller_than_one_item_returns_nothing_rather_than_lying() -> None:
+def test_no_budget_however_small_ever_returns_an_empty_window() -> None:
+    """
+    THE DEFECT THIS TEST EXISTS FOR, and it killed a golden-dataset run.
+
+        400 INVALID_ARGUMENT
+        "* GenerateContentRequest.contents: contents is not specified"
+
+    `align_to_turn_start` scans forward for a user message. Handed a window that
+    contains none, it returned `[]` -- and an empty request is not a small
+    request, it is an invalid one, reported by an error that mentions neither
+    trimming nor budgets.
+
+    An over-budget request is recoverable. An empty one is not.
+    """
+    items = load()
+    for budget in range(1, 400, 7):
+        assert trim_to_budget(items, budget), f"budget={budget} produced an empty window"
+
+
+def test_the_floor_is_the_current_turn() -> None:
+    """When the budget cannot hold even one turn, the current turn survives whole."""
+    items = load()
+    window = trim_to_budget(items, 1)
+    assert window[0].get("role") == "user"
+    assert window == items[last_turn_start(items) :]
+
+
+def test_last_turn_start_finds_the_most_recent_user_message() -> None:
+    items = load()
+    index = last_turn_start(items)
+    assert items[index].get("role") == "user"
+    assert all(i.get("role") != "user" for i in items[index + 1 :])
+
+
+def test_a_budget_smaller_than_one_item_still_fits_or_floors() -> None:
     """
     The honest edge. The loop always keeps a first item so it can make progress,
     which means one huge item could exceed the budget -- but `align_to_turn_start`
@@ -105,7 +164,7 @@ def test_a_budget_smaller_than_one_item_returns_nothing_rather_than_lying() -> N
     """
     items = load()
     window = trim_to_budget(items, 1)
-    assert window == [] or tokens(window) <= tokens(items)
+    assert tokens(window) <= tokens(items)
 
 
 # ------------------------------------------------- 3. open on a legal boundary

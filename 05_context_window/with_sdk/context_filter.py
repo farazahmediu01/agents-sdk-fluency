@@ -105,6 +105,32 @@ def align_to_turn_start(items: list[Item]) -> list[Item]:
     return []
 
 
+def last_turn_start(items: list[Item]) -> int:
+    """
+    Index of the most recent user message, or 0 if there is none.
+
+    THE FLOOR UNDER EVERY STRATEGY IN THIS CHAPTER, and it was added after a
+    golden-dataset run died on this:
+
+        400 INVALID_ARGUMENT
+        "* GenerateContentRequest.contents: contents is not specified"
+
+    `align_to_turn_start` scans FORWARD for a user message, so a window holding
+    none at all -- which a fold can easily produce by advancing past the last one
+    -- came back empty. An empty request is not a small request; it is an invalid
+    one, and the error says nothing about trimming, budgets or folds.
+
+    > **When the budget and validity conflict, validity wins.** You can send a
+    > request that is slightly larger than you wanted. You cannot send one the
+    > provider refuses to read. Every trimmer needs a floor it will not cut below,
+    > and the floor is the current turn.
+    """
+    for index in range(len(items) - 1, -1, -1):
+        if items[index].get("role") == "user":
+            return index
+    return 0
+
+
 def trim_to_budget(items: list[Item], budget: int) -> list[Item]:
     """
     Keep the newest items that fit `budget`, repair the pairs, align to a turn.
@@ -121,4 +147,12 @@ def trim_to_budget(items: list[Item], budget: int) -> list[Item]:
         if kept and tokens([*kept, item]) > budget:
             break
         kept.insert(0, item)
-    return align_to_turn_start(drop_orphans(kept))
+
+    window = align_to_turn_start(drop_orphans(kept))
+    if window or not items:
+        return window
+
+    # The floor. Aligning emptied the window, which means the budget could not
+    # even hold the current turn. Send the current turn anyway -- over budget
+    # beats invalid. See `last_turn_start`.
+    return items[last_turn_start(items) :]
