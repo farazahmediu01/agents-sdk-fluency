@@ -1,0 +1,214 @@
+[
+ {
+  "content": "Pack two t-shirts, 0.2 kg each.",
+  "role": "user"
+ },
+ {
+  "arguments": "{\"kg\":0.2,\"item\":\"t-shirt\"}",
+  "call_id": "call_3681811",
+  "name": "add_item",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "5mSDarqLCMGgnsEP58aGyAw",
+   "thought_signature": "El4KXAERTTIPbS2gQjLy029MNKzccbX0YfvDUUozY2On+N5FJuVS3a8k0MGugG5pyLMxlqYEs83ErehMWURQ+uCbIiI+w3QTW19p+xR7RWn7cnQuGD19MqosSwUmRzR6"
+  }
+ },
+ {
+  "call_id": "call_3681811",
+  "output": "Packed t-shirt (0.2 kg). Bag now 0.2 kg.",
+  "type": "function_call_output"
+ },
+ {
+  "arguments": "{\"item\":\"t-shirt\",\"kg\":0.2}",
+  "call_id": "call_467331",
+  "name": "add_item",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "52SDaq069viewQ-Unv74CA",
+   "thought_signature": "El4KXAERTTIPbGPM3TpIK+VNoWdqcGVEfPP1HxbCDuc0eN4bdLaCE+FIWKsO4Dts+LgNLaBuB7T86f5uuaJ79fz1urDYDsfjiagMjCIkB5TzkXu2lMhpQcUCOyHtboN8"
+  }
+ },
+ {
+  "call_id": "call_467331",
+  "output": "Packed t-shirt (0.2 kg). Bag now 0.4 kg.",
+  "type": "function_call_output"
+ },
+ {
+  "id": "__fake_id__",
+  "content": [
+   {
+    "annotations": [],
+    "text": "I've packed both t-shirts for you.",
+    "type": "output_text",
+    "logprobs": []
+   }
+  ],
+  "role": "assistant",
+  "status": "completed",
+  "type": "message",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "52SDauKALda8kdUPovvh0Ao"
+  }
+ },
+ {
+  "content": "Add a pair of jeans, 0.8 kg.",
+  "role": "user"
+ },
+ {
+  "arguments": "{\"item\":\"pair of jeans\",\"kg\":0.8}",
+  "call_id": "call_2720649",
+  "name": "add_item",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "8mSDaoSzJcKknsEP_qe3-Qg",
+   "thought_signature": "El4KXAERTTIP1pX0qL5cB09LWRqt5D8KpLwjWmr7w1HGKIZmtALDX5VMY8Pai3Ifw7TOzH+S/0rAoToRw7feNLKTV7B2+7rMccvofR8/TkQz9vRu9ClsKyFHvHckXz3o"
+  }
+ },
+ {
+  "call_id": "call_2720649",
+  "output": "Packed pair of jeans (0.8 kg). Bag now 1.2 kg.",
+  "type": "function_call_output"
+ },
+ {
+  "id": "__fake_id__",
+  "content": [
+   {
+    "annotations": [],
+    "text": "I've added the jeans to your bag.",
+    "type": "output_text",
+    "logprobs": []
+   }
+  ],
+  "role": "assistant",
+  "status": "completed",
+  "type": "message",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "82SDavy1F6WqkdUP2s-asAY"
+  }
+ },
+ {
+  "content": "Add a jacket, 1.2 kg.",
+  "role": "user"
+ },
+ {
+  "arguments": "{\"item\":\"jacket\",\"kg\":1.2}",
+  "call_id": "call_4153749",
+  "name": "add_item",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "_2SDauGDBZP-nsEP7aKfsQQ",
+   "thought_signature": "El4KXAERTTIPj0RLhoVaqw78sxTW8AQrRKG/+j/XtCLP77ZNOhgVaXaopQjVQ7HAuE86YLUtx5WnJVj8i3X7lYit/LMtrncfhuMfBOdAaywRV5SguH4VeEqwwKtklUy1"
+  }
+ },
+ {
+  "call_id": "call_4153749",
+  "output": "Packed jacket (1.2 kg). Bag now 2.4 kg.",
+  "type": "function_call_output"
+ },
+ {
+  "id": "__fake_id__",
+  "content": [
+   {
+    "annotations": [],
+    "text": "I've packed the jacket.",
+    "type": "output_text",
+    "logprobs": []
+   }
+  ],
+  "role": "assistant",
+  "status": "completed",
+  "type": "message",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "AGWDarLOGdHmnsEP547mmAk"
+  }
+ },
+ {
+  "content": "Add hiking boots, 1.5 kg.",
+  "role": "user"
+ },
+ {
+  "arguments": "{\"kg\":1.5,\"item\":\"hiking boots\"}",
+  "call_id": "call_768003",
+  "name": "add_item",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "C2WDapbCLOb1xN8P_6qiiAE",
+   "thought_signature": "El4KXAERTTIP2kwtYXMnBrbAlKHpXKOy7QebG7/ltxh24KIGXZA+jsU2ayMw6JJRLNLuvv7WjrPjgKwTdDXTdyMUaTrEItaGy4i4RMvcL0iEAGyPrqaLZnjtcIfAvJyU"
+  }
+ },
+ {
+  "call_id": "call_768003",
+  "output": "Packed hiking boots (1.5 kg). Bag now 3.9 kg.",
+  "type": "function_call_output"
+ },
+ {
+  "id": "__fake_id__",
+  "content": [
+   {
+    "annotations": [],
+    "text": "I've packed the hiking boots.",
+    "type": "output_text",
+    "logprobs": []
+   }
+  ],
+  "role": "assistant",
+  "status": "completed",
+  "type": "message",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "DGWDar22Idia28oPgvSq2AU"
+  }
+ },
+ {
+  "content": "How much room do I have left?",
+  "role": "user"
+ },
+ {
+  "arguments": "{}",
+  "call_id": "call_4360953",
+  "name": "remaining_allowance",
+  "type": "function_call",
+  "id": "__fake_id__",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "F2WDarL5J4--vdIP--7cwQo",
+   "thought_signature": "El4KXAERTTIPwyQEbgLNt8pa0Ko9CwzcNp13zDfozbN/EYRsmiR5VgJPIQo6Gxur4FeqLHe92gl2/cn6XroBr1S6R1pjky1Cn8GaG8VI8qO/6BddXbKJWbx/AMErgLzR"
+  }
+ },
+ {
+  "call_id": "call_4360953",
+  "output": "16.1",
+  "type": "function_call_output"
+ },
+ {
+  "id": "__fake_id__",
+  "content": [
+   {
+    "annotations": [],
+    "text": "You have 16.1 kg remaining.",
+    "type": "output_text",
+    "logprobs": []
+   }
+  ],
+  "role": "assistant",
+  "status": "completed",
+  "type": "message",
+  "provider_data": {
+   "model": "gemini-3.5-flash-lite",
+   "response_id": "GGWDasftFcbAxN8Pq8y-sA4"
+  }
+ }
+]

@@ -79,6 +79,10 @@ src = [
     "04_sessions_state/solutions",
     "04_sessions_state/with_sdk",
     "04_sessions_state/exercises",
+    "05_context_window/spike",
+    "05_context_window/with_sdk",
+    "05_context_window/solutions",
+    "05_context_window/exercises",
 ]
 
 [tool.ruff.lint]
@@ -116,6 +120,7 @@ include = [
     "02_typed_tools",
     "03_structured_outputs",
     "04_sessions_state",
+    "05_context_window",
 ]
 exclude = ["**/__pycache__", ".venv"]
 pythonVersion = "3.12"
@@ -213,6 +218,37 @@ extraPaths = [
 root = "04_sessions_state/exercises"
 extraPaths = ["04_sessions_state/exercises"]
 
+# Chapter 5. `spike/` needs its own block because `orphan_400.py` imports `trim`
+# by bare name from the same folder -- the standing reason, one chapter later.
+[[tool.pyright.executionEnvironments]]
+root = "05_context_window/spike"
+extraPaths = ["05_context_window/spike"]
+
+[[tool.pyright.executionEnvironments]]
+root = "05_context_window/with_sdk"
+extraPaths = [
+    "05_context_window/with_sdk",
+    "04_sessions_state/with_sdk",
+    "04_sessions_state/solutions",
+    "03_structured_outputs/solutions",
+    "02_typed_tools/solutions",
+    "02_typed_tools/from_scratch",
+]
+
+[[tool.pyright.executionEnvironments]]
+root = "05_context_window/solutions"
+extraPaths = [
+    "05_context_window/solutions",
+    "04_sessions_state/solutions",
+    "03_structured_outputs/solutions",
+    "02_typed_tools/solutions",
+    "02_typed_tools/from_scratch",
+]
+
+[[tool.pyright.executionEnvironments]]
+root = "05_context_window/exercises"
+extraPaths = ["05_context_window/exercises"]
+
 [[tool.pyright.executionEnvironments]]
 root = "."
 
@@ -226,6 +262,7 @@ testpaths = [
     "02_typed_tools",
     "03_structured_outputs",
     "04_sessions_state",
+    "05_context_window",
 ]
 python_files = ["test_*.py"]
 addopts = "-q"
