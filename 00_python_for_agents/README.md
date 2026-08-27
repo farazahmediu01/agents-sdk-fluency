@@ -2,21 +2,35 @@
 
 > **You know Python.** This chapter is not a Python course.
 >
-> It covers exactly six things that Chapter 1's *first file* already assumes, and nothing else. Every section ends by pointing at the line of real curriculum code where you'll meet it.
+> It covers exactly six things that Chapter 1's *first file* already assumes — §1–§6, the core path — and nothing else. Every section ends by pointing at the line of real curriculum code where you'll meet it.
+>
+> Two later additions, **§5.7 and §7, are marked `[depth]` and are not on the way to Chapter 1.** They exist because Chapters 9 and 10 need them and nothing between here and there teaches them. Skip both on a first pass; come back before Observability.
 
 | Part | Core | Full |
 |---|---|---|
-| This README (§1–§6) | 4.5 hrs | 5.5 hrs |
+| This README (§1–§6) | 5.0 hrs | 5.3 hrs |
+| `[depth]` extensions (§5.7, §7) | — | 1.5 hrs |
 | [`PROJECT.md`](PROJECT.md) — Name Check | 1.5 hrs | 2 hrs |
-| **Chapter total** | **≈ 6 hrs** | **≈ 7.5 hrs** |
+| **Chapter total** | **≈ 6.5 hrs** | **≈ 8.8 hrs** |
 
-**Plan 2 sessions.** More than half the time is §5, and that is deliberate — async is the concept that most often gets skipped and then quietly breaks everything downstream.
+<details>
+<summary>The arithmetic, so the header can be checked</summary>
+
+**Core** — §1 60 + §2 45 + §3 30 + §4 60 + §5 75 + §6 30 = **300 min (5.0 hrs)**, plus PROJECT.md 90 = **390 min (6.5 hrs)**.
+
+**Full** — core 300 + §5b 20 + §5.7 45 + §7 45 = **410 min (6.8 hrs)**, plus PROJECT.md 120 = **530 min (8.8 hrs)**.
+
+*Corrected 2026-08-27: the header previously read 4.5 core hrs for §1–§6. That was 270 minutes — the sum of §1–§5, with §6 omitted. Per the TIME BUDGETS rule in `CLAUDE.md`, a header that disagrees with the sum of its own tasks is a bug in the header.*
+
+</details>
+
+**Plan 2 sessions for the core path, 3 if you take the extensions.** More than half the core time is §5, and that is deliberate — async is the concept that most often gets skipped and then quietly breaks everything downstream.
 
 ---
 
 ## First: do you even need this chapter?
 
-Six questions, one per section. **Write your answer down before running anything.**
+Six questions, one per **core** section (§5.7 and §7 are `[depth]` and are not diagnosed here). **Write your answer down before running anything.**
 
 ```python
 # 1
@@ -280,11 +294,12 @@ Map it and every keyword lands:
 ### The lab
 
 ```powershell
-uv run python 00_python_for_agents/examples/async_lab.py       # all six
-uv run python 00_python_for_agents/examples/async_lab.py 3     # just one
+uv run python 00_python_for_agents/examples/async_lab.py 1 2 3 4 5 6   # this section
+uv run python 00_python_for_agents/examples/async_lab.py 3             # just one
+uv run python 00_python_for_agents/examples/async_lab.py               # all ten
 ```
 
-Six experiments, each killing one misconception. **Predict the timing before each.**
+Six experiments here, each killing one misconception. **Predict the timing before each.** The file holds ten — 7–10 are `[depth]` and belong to §5.7, after Challenge 5b.
 
 #### 1 — Calling an async function does not run it
 
@@ -368,6 +383,29 @@ Make one check raise a `ValueError`. Observe what `gather` does with the others.
 
 ---
 
+## 5.7 Production async `[depth]` · 45 min
+
+**Skip this on the way to Chapter 1.** Experiments 1–6 are the concepts, and the concepts are enough to read and write Chapter 1's agent loop. This section is the four things that separate async you can *explain* from async you can *ship*, and every one of them is a thing Chapter 9 or 10 will hand you without teaching.
+
+Challenge 5b above asked what `gather` does when one job raises, and deliberately left you to find out. Experiment 10 is the answer, measured.
+
+```powershell
+uv run python 00_python_for_agents/examples/async_lab.py 7 8 9 10
+```
+
+| # | The question it settles | What the run shows |
+|---|---|---|
+| 7 | Who closes the connection when the body raises? | `async with`, `__aenter__`/`__aexit__`, `@asynccontextmanager`. The manual version leaks one connection and nothing reports it |
+| 8 | Why does `await` feel slow even when it isn't? | An async generator (`yield` inside `async def`) consumed by `async for`. First output at **0.13s** instead of **0.87s** — identical total |
+| 9 | What does unbounded `gather` do to a metered API? | 9 calls at once → **3 succeed, 6 rejected**. Through `Semaphore(3)` → **9 succeed, 0 rejected**. Plus `wait_for` on a call that never returns |
+| 10 | When one job fails, what happens to its siblings? | `gather` catches at 0.20s and the orphan keeps running — it prints *after* you handled the error. `TaskGroup` cancels it and raises an `ExceptionGroup`, caught with `except*` |
+
+**Predict every timing before you run it**, the same as experiments 1–6. Experiments 9 and 10 are the two worth re-reading: 9 is why a "faster" agent gets rate-limited, and 10 is why a failed run can still be spending your tokens.
+
+> **📍 Where you'll meet this:** `async with AsyncSession(engine)` and `@asynccontextmanager` lifespans in Chapter 10; `async for event in result.stream_events()` in Chapter 9; and chunking a document for embeddings in Chapter 10, which is a generator for a reason that has nothing to do with speed.
+
+---
+
 ## 6. Writing one test `[core]` · 30 min
 
 Chapter 2 ships 46 tests and asks you to add three attacks. That exercise only works if you've written an `assert` in a test file before.
@@ -419,6 +457,32 @@ Then **make one fail on purpose** and read the output properly — pytest shows 
 
 ---
 
+## 7. Classes that extend other classes `[depth]` · 45 min
+
+**Skip this on the way to Chapter 1.** Then notice something before you do.
+
+Chapters 0–5 contain **fourteen classes and not one `super()` call.** That is not a gap in the writing — dataclasses, Pydantic models, `Protocol`s and `TypedDict`s are all classes you *fill in*, never classes you *extend*. Five chapters of real code, and inheritance genuinely never came up.
+
+Chapter 9 ends that in its first file. `RunHooks` is subclass-and-override, `SQLModel` is subclass-and-declare, and a custom eval metric is subclass-and-implement. Three libraries, one Python feature, and nothing before this taught it.
+
+```powershell
+uv run python 00_python_for_agents/examples/class_inheritance_lab.py
+```
+
+| # | The question it settles | What the run shows |
+|---|---|---|
+| 1 | What does a subclass get for free? | One method defined; `format`, `__init__`, `recipient` and `sent` all inherited. Attribute lookup walks up |
+| 2 | What is `super()` actually for? | Two classes that both "work". One quietly stopped recording what it sent: `audit=2 sent=0` |
+| 3 | The `__init__` everyone forgets | `AttributeError: 'BrokenAuditedNotifier' object has no attribute 'recipient'` — raised at *first use*, not at construction |
+| 4 | **What is a hooks class, really?** | `RunHooks` rebuilt in ~30 lines, plus a 12-line `fake_runner` that shows who calls your methods. Three subclasses, one call signature |
+| 5 | When should a base class refuse to exist? | `@abstractmethod`, and the rule for choosing between `Protocol`, a plain base, and an `ABC` |
+
+Experiment 4 is the one to read twice, for a reason that isn't obvious: the real SDK's base methods are **no-ops**, so forgetting `super()` when you subclass `RunHooks` costs you nothing at all. Then you subclass *your own* hooks — which is what happens the first time you want dev logging on top of production metrics — and the same forgotten line silently costs you the metrics. Same code, different parent, different consequence. That is why "always call `super()`" is a worse rule than knowing what the parent does.
+
+> **📍 Where you'll meet this:** `class ObservabilityHooks(RunHooks)` in Chapter 9; `class Expense(SQLModel, table=True)` in Chapter 10; a DeepEval metric subclass in Chapter 6's depth track. And `class ToolError(Exception)` in `02_typed_tools/` — which you already wrote, without noticing it was inheritance.
+
+---
+
 ## ✅ Checkpoint
 
 Without looking:
@@ -430,6 +494,12 @@ Without looking:
 5. Three `await`s in a row, each 1s. Total time? Now with `gather`?
 6. One of them uses `time.sleep`. Now what?
 7. What makes pytest consider a test passed?
+
+**If you took the `[depth]` extensions:**
+
+8. A `query()` inside a `try` raises. You call `conn.close()` on the next line. Was it closed?
+9. You override `send()` in a subclass and reimplement the parent's body by hand instead of calling `super().send()`. Name a way that goes wrong that nothing reports.
+10. `RunHooks`'s methods are all no-ops. So why does forgetting `super()` ever cost you anything?
 
 <details>
 <summary>Answers to the opening diagnostic</summary>

@@ -151,14 +151,20 @@ Rules:
 
 | Ch | Core | Full |
 |----|-----|-----|
-| 0 Python for Agents | ≈6.0 | ≈6.0 |
+| 0 Python for Agents | ≈6.5 | ≈8.8 |
 | 1 The Agent Loop | ≈8.0 | ≈11.5 |
 | 2 Typed Tools | ≈11.0 | ≈18–20 |
 | 3 Structured Outputs | ≈9.0 | ≈14.5 |
 | 4 Sessions & State | ≈10.5 | ≈16.0 |
-| **Built so far (Ch0–4)** | **≈44.5 hrs** | **≈66–68 hrs** |
+| 5 The Context Window | ≈7.0 | ≈12.0 |
+| **Built so far (Ch0–5)** | **≈52.0 hrs** | **≈81–83 hrs** |
 
-At the current mean (≈8.9 core hrs/chapter) the full twelve-chapter curriculum lands near **115 core hours**. That is roughly five months at 20 hrs/week.
+At the current mean (≈8.7 core hrs/chapter) the full twelve-chapter curriculum lands near **104 core hours**. That is roughly five months at 20 hrs/week.
+
+*Recomputed 2026-08-27. Two corrections landed in the same pass, both instances of the failure this section exists to prevent:*
+
+- ***Chapter 5 was missing entirely.*** *It shipped built and the table was never updated, so "built so far" understated the curriculum by 7 core hours.*
+- ***Chapter 0 was wrong in both columns.*** *Core read ≈6.0 against a README header of 4.5 + 1.5, and that 4.5 was itself 270 minutes — the sum of §1–§5 with §6 dropped. Full read ≈6.0 against the README's own ≈7.5. Three numbers, no two agreeing. Ch0 is now 6.5/8.8, which includes the two new `[depth]` extensions (§5.7 production async, §7 inheritance) and is shown as checkable arithmetic in the chapter README.*
 
 **An earlier planning document asserted a 34-hour core path. It was never computed, and five chapters had already broken it when it was written.** A ceiling nobody measured is the same failure as Chapter 1's original "~4 hrs" header — the very thing this section exists to prevent. The number above is arithmetic, not ambition; if it is uncomfortable, the fix is to cut chapters, not to restate the total.
 
@@ -443,16 +449,21 @@ These were validated in Ch1 and Ch2 and every later chapter should copy them:
 
 ### Chapter 0 — `00_python_for_agents/` ✅ built
 
-The prerequisite bridge. Six sections, ≈6 hrs core. No SDK layer and no Spendly increment — nothing agentic happens here, so Layers 4 and 5 do not apply. Every section ends with a **📍 where you'll meet this** box naming the exact file and line in Ch1–3.
+The prerequisite bridge. Six core sections (≈5 hrs) plus two `[depth]` extensions (1.5 hrs) and the project (1.5 hrs) — **≈6.5 hrs core, ≈8.8 full.** No SDK layer and no Spendly increment — nothing agentic happens here, so Layers 4 and 5 do not apply. Every section ends with a **📍 where you'll meet this** box naming the exact file and line in Ch1–3.
 
-- Opens with a **6-question diagnostic**, one per section, so a strong student skips the chapter in ten minutes instead of skipping the two sections they actually needed
+- Opens with a **6-question diagnostic**, one per core section, so a strong student skips the chapter in ten minutes instead of skipping the two sections they actually needed
 - `examples/foundations.py` — `list[X]`, `X | None` narrowing, `Callable` registries, `cast()`, dataclasses with `default_factory` and `@property`
 - `examples/decorator_lab.py` — proves `@x` is literally `f = x(f)`; a timing decorator; **the `functools.wraps` bug** (a wrapper that eats the docstring produces a tool the model cannot understand, and nothing crashes); and the registry decorator that is 80% of Ch2's `@tool`
 - `examples/pydantic_lab.py` — multi-error reports, and the **bool-is-an-int trap** presented as the real bug this repo shipped
-- `examples/async_lab.py` — **the centrepiece.** Six experiments with measured timings
+- `examples/async_lab.py` — **the centrepiece.** Ten experiments with measured timings; 1–6 `[core]`, 7–10 `[depth]` (§5.7)
+- `examples/class_inheritance_lab.py` — `[depth]` (§7). Five experiments ending in a hand-rolled `RunHooks`
 - `solutions/namecheck.py` + `test_namecheck.py` — the project
 
-**Async is 75 of the chapter's 270 minutes**, because it is the concept most often skipped and the one that then breaks everything downstream. The model is **one person, several machines** (laundry — deliberately not a kitchen, so it does not collide with Ch1's restaurant). The six experiments each kill one misconception, and the timings are real:
+**The `[depth]` extensions exist for a measured reason.** Ch0–5 contain fourteen classes and **zero `super()` calls**, zero `async with`, zero `async for`, and zero uses of `logging` — because dataclasses, Pydantic models, `Protocol`s and `TypedDict`s are classes you fill in, never classes you extend, and nothing before Ch9 streams or holds a connection. Chapter 9 (`RunHooks`) and Chapter 10 (`AsyncSession`, SSE, MCP clients) need all of it in their first files. Marking these `[depth]` rather than `[core]` is deliberate: a student does not need either to start Chapter 1, so the core path and the Ch0–6 Core total are unchanged.
+
+*Scope-rule check, since §29's test is strict: both extensions appear in later chapters without being taught in place, and a student who does not know them is stuck rather than slower. They earn their place — as `[depth]`, in the chapter that already owns their prerequisites.*
+
+**Async is 75 of the chapter's 300 core minutes**, because it is the concept most often skipped and the one that then breaks everything downstream. The model is **one person, several machines** (laundry — deliberately not a kitchen, so it does not collide with Ch1's restaurant). The six experiments each kill one misconception, and the timings are real:
 
 | # | Kills | Measured |
 |---|---|---|
@@ -462,8 +473,14 @@ The prerequisite bridge. Six sections, ≈6 hrs core. No SDK layer and no Spendl
 | 4 | **the invisible one** | `asyncio.sleep` **0.51s** vs `time.sleep` **1.50s**, identical code |
 | 5 | "async makes CPU work parallel" | 0.35s vs 0.37s — gather is *slower* |
 | 6 | "why is async everywhere" | function colouring, and `run_sync` |
+| 7 `[depth]` | "I close it on the last line, so it's closed" | the manual path leaks a connection; `async with` does not |
+| 8 `[depth]` | "await gets the answer, so await is all I need" | async generator: first output **0.13s** vs **0.87s**, same total |
+| 9 `[depth]` | "gather is the fast one, so gather everything" | 9 unbounded → **3 ok / 6 rejected**; via `Semaphore(3)` → **9 ok / 0 rejected** |
+| 10 `[depth]` | "the exception propagated, so everything stopped" | `gather`'s orphan sibling prints *after* the handler ran; `TaskGroup` cancels it |
 
-Experiment 4 is the one to teach hardest — it is the only one that makes the event loop visible, and the failure it describes is silent in production.
+Experiment 4 is the one to teach hardest — it is the only one that makes the event loop visible, and the failure it describes is silent in production. **Experiment 10 is the one that pays off latest**: Challenge 5b poses the "what does `gather` do when one raises" question and deliberately leaves it open, and 10 is where it closes.
+
+**The inheritance lab (§7)** is five experiments ending in a hand-rolled `RunHooks` plus a 12-line `fake_runner` that shows *who* calls the hook methods — the thing that makes hooks stop feeling like framework magic. Its sharpest teaching point is deliberately not "always call `super()`": the SDK's base methods are no-ops, so forgetting `super()` on a `RunHooks` subclass costs nothing, and the same omission on a subclass of *your own* hooks silently drops the metrics. Same code, different parent, different consequence — which is why the rule taught is *know what the parent does*, not a reflex.
 
 **The project is `namecheck.py`** — "is this startup name available?", checking domain/handle/trademark concurrently. Chosen because the three questions are genuinely independent, so concurrency is motivated rather than decorative, and because its structure *is* Chapter 1's: a registry, dispatch by name, a typed report. The only thing Chapter 1 adds is that a model picks the entries. `--slow` runs the same checks sequentially: 1.50s vs 0.60s.
 

@@ -1,8 +1,14 @@
 """
-The async lab - six experiments, each one killing a specific misconception.
+The async lab - ten experiments, each one killing a specific misconception.
 
-    uv run python 00_python_for_agents/examples/async_lab.py          # all six
+    uv run python 00_python_for_agents/examples/async_lab.py          # all ten
     uv run python 00_python_for_agents/examples/async_lab.py 3        # just experiment 3
+
+Experiments 1-6 are the concepts. Experiments 7-10 are the four things production
+async needs that the concepts alone do not give you: releasing a resource that
+must be released, receiving values as they arrive, refusing to start more work
+than the far end will accept, and deciding what happens to the siblings when one
+job fails. Every one of them shows up in the SDK before Chapter 3.
 
 No API key. No network. Everything here is simulated with sleeps, which is not a
 cheat -- `asyncio.sleep` is a genuinely accurate stand-in for "waiting on
@@ -48,6 +54,8 @@ from __future__ import annotations
 import asyncio
 import sys
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 # -----------------------------------------------------------------------------
 # A stand-in for "something outside this program that takes time".
@@ -296,6 +304,325 @@ async def experiment_6() -> None:
 
 
 # -----------------------------------------------------------------------------
+# 7. `async with` - the cleanup that survives an exception.
+#
+# THE MISCONCEPTION: "I close it on the last line, so it gets closed."
+# -----------------------------------------------------------------------------
+#
+# Back to the laundry: the machine door has to be closed and the machine handed
+# back to the next person, and that is true whether the load washed cleanly or
+# the drum jammed halfway. Where you put the "hand it back" line decides whether
+# it happens on the bad day.
+
+OPEN_CONNECTIONS = 0
+
+
+class PooledConnection:
+    """
+    A stand-in for a database connection - something you must give BACK.
+
+    `async with` needs exactly two methods, `__aenter__` and `__aexit__`. There
+    is no base class to inherit and no library involved: the two methods ARE the
+    protocol, the same way `__len__` is all `len()` ever wanted.
+    """
+
+    def __init__(self, label: str) -> None:
+        self.label = label
+
+    async def __aenter__(self) -> PooledConnection:
+        global OPEN_CONNECTIONS
+        await asyncio.sleep(0.05)  # handshakes take time - hence ASYNC with
+        OPEN_CONNECTIONS += 1
+        print(f"   [open  {self.label}]   pool holds {OPEN_CONNECTIONS}")
+        return self  # <- this is what `as conn` binds to
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        # Called on the way out. ALWAYS -- normal exit, `return`, or exception.
+        global OPEN_CONNECTIONS
+        await asyncio.sleep(0.05)
+        OPEN_CONNECTIONS -= 1
+        print(f"   [close {self.label}]   pool holds {OPEN_CONNECTIONS}")
+
+    async def query(self, sql: str) -> str:
+        await asyncio.sleep(0.1)
+        if "boom" in sql:
+            raise ValueError("syntax error near 'boom'")
+        return f"{sql!r} -> 1 row"
+
+
+@asynccontextmanager
+async def borrowed(label: str) -> AsyncIterator[PooledConnection]:
+    """
+    The same thing, written as a function instead of a class.
+
+    Everything before `yield` is `__aenter__`. Everything after is `__aexit__`.
+    The `try/finally` is what makes the teardown survive an exception in the
+    body -- without it this decorator gives you nothing the manual version did
+    not already fail to give you.
+    """
+    conn = PooledConnection(label)
+    await conn.__aenter__()
+    try:
+        yield conn
+    finally:
+        await conn.__aexit__()
+
+
+async def experiment_7() -> None:
+    print("7. `async with` and the connection you forgot to give back\n")
+
+    print("   (a) closing it on the last line, the way it looks fine:\n")
+    conn = PooledConnection("manual")
+    await conn.__aenter__()
+    try:
+        print(f"   {await conn.query('select boom')}")
+        await conn.__aexit__()  # never reached - query() raised above it
+    except ValueError as exc:
+        print(f"   ValueError: {exc}")
+    leaked = OPEN_CONNECTIONS
+    print(f"\n   pool holds {leaked} after the block ended   <- leaked one\n")
+
+    print("   (b) the same failing query, inside `async with`:\n")
+    before = OPEN_CONNECTIONS
+    try:
+        async with PooledConnection("guarded") as guarded:
+            print(f"   {await guarded.query('select boom')}")
+    except ValueError as exc:
+        print(f"   ValueError: {exc}")
+    print(f"\n   pool holds {OPEN_CONNECTIONS}, same as the {before} it started with")
+    print("   -- this block leaked nothing. The 1 still sitting there is (a)'s,")
+    print("   and it is not coming back on its own.\n")
+
+    print("   (c) `@asynccontextmanager` - the same guarantee, as a function:\n")
+    async with borrowed("factory") as conn2:
+        print(f"   {await conn2.query('select 1')}")
+
+    print()
+    print("   The leak in (a) is not a typo -- it is the shape. Any `return`, any")
+    print("   `raise`, any early exit between open and close skips the close, and")
+    print("   the failure is invisible until the pool runs dry in production.")
+    print()
+    print("   Where you will meet this:")
+    print()
+    print("       async with AsyncSession(engine) as session:    # Phase 2, SQLModel")
+    print("       async with MCPServerStdio(params) as server:   # Phase 1, L8")
+    print("       @asynccontextmanager")
+    print("       async def lifespan(app): ...                   # Phase 2, FastAPI")
+    print()
+    print("   All three are this. A resource with a far end that has to be told.")
+
+
+# -----------------------------------------------------------------------------
+# 8. `async for` - values as they arrive, not all at the end.
+#
+# THE MISCONCEPTION: "await gets me the answer, so await is all I need."
+# -----------------------------------------------------------------------------
+
+
+async def answer_at_once(prompt: str) -> str:
+    """The ordinary shape: one value, handed over when everything is done."""
+    tokens = prompt.split()
+    for _ in tokens:
+        await asyncio.sleep(0.12)
+    return " ".join(tokens)
+
+
+async def answer_streaming(prompt: str) -> AsyncIterator[str]:
+    """
+    An ASYNC GENERATOR: `yield` inside `async def`.
+
+    It is not a coroutine and you cannot `await` it -- awaiting gives you the
+    generator object, not its values. It is consumed with `async for`, which
+    resumes the function each time round the loop.
+    """
+    for token in prompt.split():
+        await asyncio.sleep(0.12)
+        yield token
+
+
+async def experiment_8() -> None:
+    print("8. Waiting for the whole answer vs watching it arrive\n")
+
+    prompt = "your rent is due on the fifth"
+
+    start = time.perf_counter()
+    whole = await answer_at_once(prompt)
+    at_once_total = time.perf_counter() - start
+    print(f"   awaited     : nothing... then {whole!r}")
+    print(f"   first output after {at_once_total:.2f}s, total {at_once_total:.2f}s\n")
+
+    start = time.perf_counter()
+    first_at = 0.0
+    print("   streamed    : ", end="", flush=True)
+    async for token in answer_streaming(prompt):
+        if first_at == 0.0:
+            first_at = time.perf_counter() - start
+        print(f"{token} ", end="", flush=True)
+    streamed_total = time.perf_counter() - start
+    print(f"\n   first output after {first_at:.2f}s, total {streamed_total:.2f}s")
+
+    print()
+    print("   Same work. Same total. The difference is entirely in WHEN the first")
+    print("   thing reaches whoever is waiting, and for a person watching a screen")
+    print("   that is most of what 'fast' means.")
+    print()
+    print("   Note what you cannot do: `await answer_streaming(...)` does not give")
+    print("   you the tokens. An async generator is consumed by `async for` or it")
+    print("   is not consumed at all.")
+    print()
+    print("   Where you will meet this:")
+    print()
+    print("       async for event in result.stream_events():     # Phase 1, L7")
+    print("       async def chunks(): yield ...                  # Phase 2, SSE")
+    print()
+    print("   And in Phase 2 again, for a reason that has nothing to do with speed:")
+    print("   chunking a document for embeddings is a generator, because you do not")
+    print("   want the whole corpus in memory to produce the first chunk.")
+
+
+# -----------------------------------------------------------------------------
+# 9. Semaphore and wait_for - starting less work on purpose.
+#
+# THE MISCONCEPTION: "gather() is the fast one, so gather() everything."
+# -----------------------------------------------------------------------------
+
+
+class RateLimitError(RuntimeError):
+    """What the far end says when you started more than it agreed to."""
+
+
+IN_FLIGHT = 0
+CONCURRENCY_CEILING = 3
+
+
+async def metered_call(n: int) -> str:
+    """A stand-in for an LLM endpoint that allows 3 concurrent requests."""
+    global IN_FLIGHT
+    IN_FLIGHT += 1
+    try:
+        if IN_FLIGHT > CONCURRENCY_CEILING:
+            raise RateLimitError(f"429 rate_limit_exceeded (call {n})")
+        await asyncio.sleep(0.3)
+        return f"call {n} ok"
+    finally:
+        IN_FLIGHT -= 1
+
+
+async def guarded_call(n: int, gate: asyncio.Semaphore) -> str:
+    """The same call, but it waits for a slot before it starts."""
+    async with gate:  # <- experiment 7's `async with`, doing real work
+        return await metered_call(n)
+
+
+async def never_answers() -> str:
+    """The far end accepted the connection and then went quiet. It happens."""
+    await asyncio.sleep(30)
+    return "eventually"
+
+
+async def experiment_9() -> None:
+    print("9. Bounded concurrency, and the call that never comes back\n")
+
+    print("   (a) nine calls, all started at once:\n")
+    start = time.perf_counter()
+    results = await asyncio.gather(*(metered_call(n) for n in range(1, 10)), return_exceptions=True)
+    unbounded = time.perf_counter() - start
+    failed = [r for r in results if isinstance(r, BaseException)]
+    print(f"   {len(results) - len(failed)} succeeded, {len(failed)} rejected in {unbounded:.2f}s")
+    print(f"   first rejection: {failed[0]}")
+
+    print("\n   (b) the same nine, through a Semaphore(3):\n")
+    gate = asyncio.Semaphore(CONCURRENCY_CEILING)
+    start = time.perf_counter()
+    ok = await asyncio.gather(*(guarded_call(n, gate) for n in range(1, 10)))
+    bounded = time.perf_counter() - start
+    print(f"   {len(ok)} succeeded, 0 rejected in {bounded:.2f}s")
+
+    print("\n   (c) a call that hangs, with a deadline on it:\n")
+    start = time.perf_counter()
+    try:
+        await asyncio.wait_for(never_answers(), timeout=0.5)
+    except TimeoutError:
+        print(
+            f"   TimeoutError after {time.perf_counter() - start:.2f}s (the 30s call was cancelled)"
+        )
+
+    print()
+    print("   (a) is what unbounded gather() does to a metered API: it is not")
+    print("   faster, it is *rejected*, and every rejection is a retry you now have")
+    print("   to write. (b) is slower on paper and finishes all nine.")
+    print()
+    print("   A Semaphore is a bag of N tickets. `async with gate` takes one and")
+    print("   gives it back on the way out, so at most N coroutines are ever past")
+    print("   that line. It does not slow anything down -- it stops you starting")
+    print("   work the far end was never going to do.")
+    print()
+    print("   And (c): without `wait_for` there is no upper bound on how long an")
+    print("   `await` can sit there. A hung call is not an error, it is a silence,")
+    print("   and silence has no timeout unless you supply one.")
+
+
+# -----------------------------------------------------------------------------
+# 10. gather vs TaskGroup - what happens to the siblings when one fails.
+#
+# THE MISCONCEPTION: "the exception propagated, so everything stopped."
+# -----------------------------------------------------------------------------
+
+
+async def fails_fast() -> str:
+    await asyncio.sleep(0.2)
+    raise RuntimeError("extraction failed")
+
+
+async def keeps_going(label: str) -> str:
+    """A long sibling that announces itself when it finishes."""
+    await asyncio.sleep(0.8)
+    print(f"   >>> {label} finished, and nobody is waiting for it")
+    return label
+
+
+async def experiment_10() -> None:
+    print("10. When one job fails, what happens to the others?\n")
+
+    print("   (a) gather():\n")
+    start = time.perf_counter()
+    try:
+        await asyncio.gather(fails_fast(), keeps_going("gather-sibling"))
+    except RuntimeError as exc:
+        print(f"   caught {exc!r} after {time.perf_counter() - start:.2f}s")
+        print("   ...gather() has returned. Watch what the sibling does next:\n")
+
+    await asyncio.sleep(0.8)  # give the orphan time to surface
+
+    print("\n   (b) TaskGroup:\n")
+    start = time.perf_counter()
+    try:
+        async with asyncio.TaskGroup() as group:
+            group.create_task(fails_fast())
+            group.create_task(keeps_going("taskgroup-sibling"))
+    except* RuntimeError as group_exc:
+        print(f"   caught {group_exc.exceptions} after {time.perf_counter() - start:.2f}s")
+
+    await asyncio.sleep(0.8)  # same wait - and this time nothing appears
+    print("   ...0.8s later, and the sibling never printed. It was cancelled.")
+
+    print()
+    print("   gather() propagates the first exception to YOU and leaves the other")
+    print("   tasks running, unwatched, with nobody holding their results. They")
+    print("   still consume tokens, still write to your database, and still log")
+    print("   errors into a request that already returned 500.")
+    print()
+    print("   TaskGroup treats the group as one unit: a failure cancels the")
+    print("   siblings and raises an ExceptionGroup, which is why the handler is")
+    print("   `except*` -- more than one of them may have failed.")
+    print()
+    print("   THE RULE: `gather()` when the tasks are genuinely independent and you")
+    print("   want every result (pass `return_exceptions=True` and inspect them).")
+    print("   `TaskGroup` when they are parts of one job and a partial answer is")
+    print("   worse than no answer -- which, for one user's agent run, it is.")
+
+
+# -----------------------------------------------------------------------------
 
 
 async def main() -> None:
@@ -306,6 +633,10 @@ async def main() -> None:
         4: experiment_4,
         5: experiment_5,
         6: experiment_6,
+        7: experiment_7,
+        8: experiment_8,
+        9: experiment_9,
+        10: experiment_10,
     }
 
     wanted = [int(a) for a in sys.argv[1:] if a.isdigit()] or list(experiments)

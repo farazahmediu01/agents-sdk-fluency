@@ -30,7 +30,7 @@ By the end you should be able to say:
 
 You need **working Python**, not beginner Python: functions, dicts, loops, exceptions, classes, imports, and comfort reading a traceback.
 
-You do **not** need type hints beyond the basics, decorators, dataclasses, Pydantic, `async`/`await`, or pytest — those are **Chapter 0**, which is about 6 hours and opens with a 6-question diagnostic so you can skip the parts you already know. Skip Chapter 0 entirely and you will stall in Chapter 2.
+You do **not** need type hints beyond the basics, decorators, dataclasses, Pydantic, `async`/`await`, or pytest — those are **Chapter 0**, which is about 6.5 hours on the core path and opens with a 6-question diagnostic so you can skip the parts you already know. Skip Chapter 0 entirely and you will stall in Chapter 2.
 
 No AI/ML background required.
 
@@ -38,7 +38,7 @@ No AI/ML background required.
 
 | Ch | What You Build | Axes | Status |
 |----|---------------|------|--------|
-| 0 | **Python for Agents** — typing, decorators, dataclasses, Pydantic, async, pytest | — | ✅ Built |
+| 0 | **Python for Agents** — typing, decorators, dataclasses, Pydantic, async, pytest · `[depth]`: production async, inheritance | — | ✅ Built |
 | 1 | **The Agent Loop** — the `while` loop every framework wraps | 🧠🔒📐 | ✅ Built |
 | 2 | **Typed Tools** — validation before the function body runs | 🔒📐 | ✅ Built |
 | 3 | **Structured Outputs** — typed answers, and evals that stop guessing | 📐🧠 | ✅ Built |
@@ -59,12 +59,12 @@ Twelve chapters is a long road and a student deserves a defensible place to stop
 
 | Track | Chapters | Core hours | A graduate can |
 |---|---|---|---|
-| **Core** | 0–6 | **≈62** | Build a tool-using, typed, stateful, context-managed agent — **and prove it works** with a golden dataset and a regression suite |
-| Specialist extension | 7–12 | ≈53 | Multi-agent systems, guardrails, observability, serving, MCP, and a cold-build capstone |
+| **Core** | 0–6 | **≈62** — 52 measured (Ch0–5) + ~10 projected (Ch6) | Build a tool-using, typed, stateful, context-managed agent — **and prove it works** with a golden dataset and a regression suite |
+| Specialist extension | 7–12 | ≈53 — **entirely projected**, nothing built | Multi-agent systems, guardrails, observability, serving, MCP, and a cold-build capstone |
 
 **Ch6 is the finish line because evals are what make everything before it provable.** Stop at Chapter 6 and you have a complete, honest, employable skill set. Stop at Chapter 5 and you have an agent nobody can grade.
 
-Those hours are the sum of the chapters' own published per-section estimates, recomputed every time a chapter lands — never a target somebody hoped for. See `CLAUDE.md`'s TIME BUDGETS section for the arithmetic.
+Those hours are the sum of the chapters' own published per-section estimates, recomputed every time a chapter lands — never a target somebody hoped for. **A built chapter's hours are measured; an unbuilt chapter's are a guess, and the table now says which is which** — the same honesty rule the budgets themselves are under. See `CLAUDE.md`'s TIME BUDGETS section for the arithmetic.
 
 Chapters past the next one are **deliberately not designed yet.** Each is specified only once the previous is built and validated, so the sequence stays coherent instead of aspirational.
 
