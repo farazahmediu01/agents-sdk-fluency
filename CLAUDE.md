@@ -6,6 +6,10 @@
 >
 > The other two entry points: [`INSTRUCTOR.md`](INSTRUCTOR.md) for teaching the material, [`SDK_BRIDGE.md`](SDK_BRIDGE.md) for the running our-code→SDK map.
 
+> ## 🎯 Guiding a student through an exercise? Use `/practice` (`.claude/skills/practice/SKILL.md`).
+>
+> Its rules override the global coaching style for that session: read the exercise and its files before instructing, one step at a time, never state unseen output, record evidence in the chapter's `RUNS.md`.
+
 A hands-on curriculum that makes a student **fluent in the OpenAI Agents SDK** — by spiking each mechanism by hand just deeply enough that the framework stops feeling like magic, then building for real with the SDK.
 
 This is not a personal experiment — it is a **teaching resource**. Instructors and students use this repository to learn, teach, and practice agentic AI. Every session must produce working code AND tasks that make students build something themselves.

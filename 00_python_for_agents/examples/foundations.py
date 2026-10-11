@@ -56,7 +56,7 @@ def demo_optional() -> None:
     found = find_user_message(conversation)
 
     # Uncomment to see pyright refuse it BEFORE you run:
-    #   print(found.upper())
+    # print(found.upper())
     #   -> "upper" is not a known attribute of "None"
     #
     # It is right. `find_user_message` can return None, and this line would
@@ -122,12 +122,19 @@ def demo_registry() -> None:
 # =============================================================================
 
 
+def load_setting() -> object:
+    """Stand-in for a library call whose type is weaker than its guarantee."""
+    return "gemini-2.5-flash"
+
+
 def demo_cast() -> None:
     # Say a library hands you back `object` but you know from its docs that this
     # particular call always returns a string.
-    raw: object = "gemini-2.5-flash"
+    # (A function, not `raw: object = "..."` -- pyright would narrow a literal
+    # assignment straight back to `str` and the error below would never appear.)
+    raw = load_setting()
 
-    # print(raw.upper())          # pyright: "upper" is not a known attribute
+    # print(raw.upper())   # -> error: Cannot access attribute "upper" for class "object"
     model_name = cast(str, raw)
     print(f"  cast to str -> {model_name.upper()}")
 

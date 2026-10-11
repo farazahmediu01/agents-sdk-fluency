@@ -7,9 +7,10 @@ Expected files by the end of the chapter:
 | File | From |
 |---|---|
 | `slow_report.py` | README Practice 5 — the async timing exercise |
+| `test_practice6.py` | README Practice 6 — your four tests |
 | `namecheck.py` | [`PROJECT.md`](../PROJECT.md) — the chapter project |
 | `test_namecheck.py` | The project's proof layer, 8+ tests |
 
-Practices 1–4 and 6 edit the files in `../examples/` directly. Break them freely — they're demonstrations, and `git checkout` will bring them back.
+Practices 1–4 edit the files in `../examples/` directly. Break them freely — they're demonstrations, and `git checkout` will bring them back.
 
 **Do not open `../solutions/` until you have attempted.** Reading the answer first feels efficient and teaches nothing.

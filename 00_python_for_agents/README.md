@@ -103,6 +103,8 @@ That is a tool registry. Chapter 1's is about four lines longer.
 
 ### ▶ Practice 1 — break it on purpose (20 min)
 
+**Edit:** `examples/foundations.py`
+
 In `foundations.py`, uncomment the `print(found.upper())` line and run `pyright`.
 
 1. Read the error. Is pyright right? Construct the input that would actually crash.
@@ -159,6 +161,8 @@ Now put that next to how tools work here: `@function_tool` reads your docstring 
 
 ### ▶ Practice 2 — write two (25 min)
 
+**Edit:** `examples/decorator_lab.py` — add both decorators below `timed`
+
 1. Write `@retry` — calls the function, and if it raises, tries twice more before giving up. Test it with a function that fails the first two times.
 2. Write `@count_calls` — remembers how many times it was called, exposed as `fn.calls`.
 3. Deliberately omit `functools.wraps` from one of them and print `__name__` and `__doc__`.
@@ -202,6 +206,8 @@ tool_names: list[str] = []          # WRONG — and Python will not stop you
 That list is created **once**, when the class is defined, and every instance shares it. Appending to one report's list appends to all of them. `field(default_factory=list)` says "call this to make a fresh one per instance."
 
 ### ▶ Practice 3 — feel the shared-list bug (20 min)
+
+**Edit:** `examples/foundations.py` — `RunReport`
 
 1. Change `RunReport.tool_names` to `= []`. pyright will complain — read what it says, then make it run anyway.
 2. Create two reports, append to one, print both.
@@ -250,6 +256,8 @@ seats: true    ->  1      # ...oh
 > The lesson to carry forward: **a library's defaults are somebody else's judgement about your trade-offs.** Lax coercion is right for a model's sloppy JSON and wrong for a money field, and only you know which one you have.
 
 ### ▶ Practice 4 — design a model (30 min)
+
+**Edit:** `examples/pydantic_lab.py` — add `SignupForm` next to `Booking`
 
 Write `SignupForm` with: `username` (3–20 chars, lowercase/digits/underscore), `age` (13–120), `plan` (one of free/pro/team), `referral_code` (optional).
 
@@ -364,6 +372,8 @@ result = Runner.run_sync(agent, message)    # the escape hatch
 
 ### ▶ Practice 5 — make the slow thing fast (30 min)
 
+**Create:** `exercises/slow_report.py`
+
 Write `slow_report.py`: three `async def` functions that each `await asyncio.sleep(1)` and return a string.
 
 1. Call all three with `await` in sequence. Time it. Predict first.
@@ -442,6 +452,8 @@ def test_bad_names_are_rejected(bad_name: str) -> None:
 pytest tells you *which* parameter failed, so a list of cases stays as debuggable as five separate tests.
 
 ### ▶ Practice 6 — write four (25 min)
+
+**Create:** `exercises/test_practice6.py`
 
 ```powershell
 uv run pytest 00_python_for_agents/ -v
